@@ -4,6 +4,6 @@ from dataclasses import dataclass
 class GPTConfig:
         block_size:int = 1024
         vocab_size:int = 50257
-        n_layer:int   = 12
+        n_layer:int   = 1
         n_head:int = 12
         n_embd:int = 768

@@ -103,10 +103,12 @@ class GPT(nn.Module):
         return logits
        
     @classmethod
-    def from_local(cls,path):
-        model = GPT(config)
-        state_dict = torch.load(path)
-        model.load_state_dict(state_dict, strict=True)
+    def from_local(cls, path, config, map_location=None):
+        model = cls(config)  # Use `cls` instead of `GPT` to be more general
+        if map_location == 'cpu':
+           map_location = torch.device('cpu')
+        state_dict = torch.load(path, map_location=map_location)
+        model.load_state_dict(state_dict)
         print(f"Model loaded successfully from {path}")
         return model
 
