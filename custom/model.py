@@ -39,28 +39,45 @@ def rmsnorm(x0, eps=1e-6):
 
 class CausalSelfAttention(nn.Module):
 
-    def __init__(self,config):
+    def __init__(self, config):
         super().__init__()
         self.n_head = config.n_head
         self.n_embd = config.n_embd
         self.head_dim = self.n_embd // self.n_head
-        assert self.n_embd % self.n_head == 0 
-        self.c_attn = nn.Linear(self.n_embd,3 * self.n_embd,bias=False)
-        self.c_proj = nn.Linear(self.n_embd,3 * self.n_embd,bias=False)
+        assert self.n_embd % self.n_head == 0
+        self.c_attn = nn.Linear(self.n_embd, 3 * self.n_embd, bias=False)
+        self.c_proj = nn.Linear(self.n_embd, self.n_embd, bias=False)
         self.rotary = Rotary(self.head_dim)
+        
+        # Add depthwise convolution layers
+        self.conv_q = nn.Conv1d(self.n_embd, self.n_embd, kernel_size=3, padding=1, groups=self.n_embd)
+        self.conv_k = nn.Conv1d(self.n_embd, self.n_embd, kernel_size=3, padding=1, groups=self.n_embd)
+        self.conv_v = nn.Conv1d(self.n_embd, self.n_embd, kernel_size=3, padding=1, groups=self.n_embd)
 
-    def forward(self,x):
-        B,T,C = x.size()
+    def forward(self, x):
+        B, T, C = x.size()
         qkv = self.c_attn(x)
-        q,k,v = qkv.split(self.n_embd,dim=2)
-        k = k.view(B, T, self.n_head, self.head_dim)
-        q = q.view(B, T, self.n_head, self.head_dim)
-        v = v.view(B, T, self.n_head, self.head_dim)
-        cos,sin = self.rotary(q)
-        q = apply_rotary_emb(q,cos,sin)
-        k = apply_rotary_emb(k,cos,sin)
-        y = F.scaled_dot_product_attention(q.transpose(1,2),k.transpose(1,2),v.transpose(1,2),is_causal=True)
-        y = y.transpose(1,2).contiguous().view(B,T,C)
+        q, k, v = qkv.split(self.n_embd, dim=2)
+        
+        # Reshape for multi-head attention
+        q = q.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+        k = k.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+        v = v.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
+        
+        # Apply depthwise convolution after multi-head projection
+        q = self.conv_q(q.reshape(B * self.n_head, self.head_dim, T)).reshape(B, self.n_head, self.head_dim, T)
+        k = self.conv_k(k.reshape(B * self.n_head, self.head_dim, T)).reshape(B, self.n_head, self.head_dim, T)
+        v = self.conv_v(v.reshape(B * self.n_head, self.head_dim, T)).reshape(B, self.n_head, self.head_dim, T)
+        
+        # Apply rotary embeddings
+        cos, sin = self.rotary(q)
+        q = apply_rotary_emb(q, cos, sin)
+        k = apply_rotary_emb(k, cos, sin)
+        
+        # Perform scaled dot-product attention
+        y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+        
+        y = y.transpose(1, 2).contiguous().view(B, T, C) 
         y = self.c_proj(y)
         return y
 
