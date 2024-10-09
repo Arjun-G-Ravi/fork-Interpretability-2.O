@@ -1,13 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 
 config = {
     'activation_dim':768,
     'dict_dim':16384,
     'l1_coeff':3e-4,
-
 }
+
+
 class AutoEncoder(nn.Module):
 
     def __init__(self,cfg):
