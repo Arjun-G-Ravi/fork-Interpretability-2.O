@@ -1,17 +1,23 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 
 config = {
     'activation_dim':768,
     'dict_dim':16384,
     'l1_coeff':3e-4,
-
+    'batch_size': 32,
+    'num_epochs': 200,
+    'lr':1e-4
 }
-class AutoEncoder(nn.Module):
+
+
+class ReluAutoEncoder(nn.Module):
 
     def __init__(self,cfg):
         super().__init__()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.cfg = cfg
         self.l1_coeff = cfg['l1_coeff']
@@ -24,10 +30,11 @@ class AutoEncoder(nn.Module):
         #idk y i should normalise tell me if you know 
         self.W_dec.data[:] = self.W_dec / self.W_dec.norm(dim=-1, keepdim=True)
 
-        self.neuron_activity = torch.zeros(cfg['dict_dim'])
+        self.neuron_activity = torch.zeros(cfg['dict_dim']).to(device)
         self.step_counter = 0
 
     def forward(self,x):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         x_cent = x - self.b_dec
         acts = F.relu(x_cent@self.W_enc + self.b_enc)
@@ -103,10 +110,9 @@ class AutoEncoder(nn.Module):
         self.neuron_activity.zero_()
         self.step_counter = 0
 
-
-
-sae = AutoEncoder(cfg=config)
-d = sae(torch.ones([config['activation_dim']]))
+if __name__ == '__main__':
+    sae = ReluAutoEncoder(cfg=config)
+    d = sae(torch.ones([config['activation_dim']]))
 
 
 

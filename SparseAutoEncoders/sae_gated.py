@@ -68,7 +68,7 @@ class GatedAutoEncoder(nn.Module):
         loss = l2_loss + l1_loss
         return loss,l2_loss,l1_loss
 
-
-sae = GatedAutoEncoder(cfg=config)
-d = sae(torch.ones([config['activation_dim']]))
-print()
+if __name__ == '__main__':
+    sae = GatedAutoEncoder(cfg=config)
+    d = sae(torch.ones([config['activation_dim']]))
+    print()
