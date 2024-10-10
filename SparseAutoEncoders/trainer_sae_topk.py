@@ -1,5 +1,5 @@
 
-# bugs in original code, will write later
+# some bug, the loss doesnt go down
 
 import torch
 import torch.nn as nn
