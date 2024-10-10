@@ -2,11 +2,15 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
+
 config = {
     'activation_dim':768,
     'dict_dim':16384,
     'l1_coeff':3e-4,
-    'k':5
+    'batch_size': 32,
+    'num_epochs': 200,
+    'lr':1e-4,
+    'k': 5
 }
 
 class TopKAutoEncoder(nn.Module):
@@ -30,13 +34,13 @@ class TopKAutoEncoder(nn.Module):
         post_topk = post_relu.topk(self.k,sorted=False,dim=-1)
 
         tops_acts,top_indices = post_topk.values,post_topk.indices
-        print(top_indices)
+        # print(top_indices)
 
         buffer = torch.zeros_like(post_relu)
         encoder_acts = buffer.scatter_(dim=-1,index=top_indices, src=tops_acts)
         
         if return_topk:
-            return encoded_acts, tops_acts, top_indices
+            return encoder_acts, tops_acts, top_indices
         else:
             return encoder_acts
     
@@ -45,15 +49,18 @@ class TopKAutoEncoder(nn.Module):
 
     def forward(self,x):
         acts = self.encode(x)
-        print(acts)
+        # t(acts)
         x_reconstruct = self.decode(acts)
         l2_loss = (x_reconstruct.float() - x.float()).pow(2).sum(-1).mean(0)
-        return l2_loss,x_reconstruct,acts
+        print(l2_loss)
+        l1_loss = torch.tensor(0) # sample to fill the spot
+        loss = l2_loss+l1_loss
+        return loss, x_reconstruct, acts, l2_loss,l1_loss
 
-    @t.no_grad()
+    @torch.no_grad()
     def set_decoder_norm_to_unit_norm(self):
-        eps = t.finfo(self.decoder.weight.dtype).eps
-        norm = t.norm(self.decoder.weight.data, dim=0, keepdim=True)
+        eps = torch.finfo(self.decoder.weight.dtype).eps
+        norm = torch.norm(self.decoder.weight.data, dim=0, keepdim=True)
         self.decoder.weight.data /= norm + eps
 
         
@@ -64,6 +71,6 @@ class TopKAutoEncoder(nn.Module):
         W_dec_grad_proj = (self.decoder.grad * W_dec_normed).sum(-1, keepdim=True) * W_dec_normed
         self.decoder.grad -= W_dec_grad_proj 
 
-
-sae = TopKAutoEncoder(cfg=config)
-d = sae(torch.ones([config['activation_dim']]))
+if __name__ == '__main__':
+    sae = TopKAutoEncoder(cfg=config)
+    d = sae(torch.ones([config['activation_dim']]))

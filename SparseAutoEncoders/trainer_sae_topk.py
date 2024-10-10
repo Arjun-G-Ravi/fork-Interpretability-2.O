@@ -1,11 +1,11 @@
-# haven't used the resample code and parallel component code
 
+# bugs in original code, will write later
 
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torch.optim as optim
-from sae_relu import ReluAutoEncoder, config
+from sae_topk import TopKAutoEncoder, config
 from sae_dataset import SAE_Dataset
 from torch.utils.data import Dataset, DataLoader
 
@@ -15,7 +15,7 @@ dataset = SAE_Dataset()
 train_dataloader = DataLoader(dataset = dataset, batch_size = config['batch_size'], shuffle=True, num_workers=0)
 test_dataloader = DataLoader(dataset = dataset, batch_size = config['batch_size'], shuffle=True, num_workers=0)
 
-model = ReluAutoEncoder(cfg = config).to(device)
+model = TopKAutoEncoder(cfg = config).to(device)
 criterion = nn.MSELoss()
 optimiser = optim.Adam(model.parameters(), lr=config['lr'])
 
