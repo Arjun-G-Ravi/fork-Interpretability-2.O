@@ -34,8 +34,6 @@ class ReluAutoEncoder(nn.Module):
         self.step_counter = 0
 
     def forward(self,x):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
         x_cent = x - self.b_dec
         acts = F.relu(x_cent@self.W_enc + self.b_enc)
         x_reconstruct = acts@self.W_dec + self.b_dec
