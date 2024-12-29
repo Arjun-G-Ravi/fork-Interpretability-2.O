@@ -4,15 +4,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
-config = {
-    'activation_dim':768,
-    'dict_dim':16384,
-    'l1_coeff':3e-4,
-    'batch_size': 32,
-    'num_epochs': 200,
-    'lr':1e-4,
-    'k': 5
-}
+
 
 class GatedAutoEncoder(nn.Module):
 
